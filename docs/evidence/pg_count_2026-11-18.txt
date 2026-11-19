@@ -1,0 +1,4 @@
+consulta: SELECT count(*) FROM "Offer" WHERE "producerId"=<PRODUCER_ID> AND "clientOfferId"='c9677c97-fb1d-43cb-bca3-9a527c44e3ee';
+resultado: 1
+fecha: 2026-11-18
+nota: consulta de solo lectura; el ID de productor se omite en esta copia depurada.

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Instalar backend con lockfile
+        working-directory: backend
+        run: npm ci --ignore-scripts
+      - name: Compilar backend
+        working-directory: backend
+        run: npx prisma generate && npm run build
+      - name: Instalar y compilar frontend con lockfile
+        working-directory: frontend
+        run: npm ci && npm run build
+      - name: Revisión de dependencias (backend)
+        working-directory: backend
+        run: npm audit --audit-level=critical --omit=dev
+      - name: Revisión de dependencias (frontend)
+        working-directory: frontend
+        run: npm audit --audit-level=critical --omit=dev
+      - name: Revisión de dependencias en PR
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generar credenciales efímeras
+        run: |
+          for variable in POSTGRES_PASSWORD JWT_SECRET DEMO_PASSWORD; do
+            value="$(openssl rand -hex 24)"
+            echo "::add-mask::$value"
+            echo "$variable=$value" >> "$GITHUB_ENV"
+          done
+      - name: Levantar demo con Compose
+        run: docker compose up -d --build
+      - name: Pruebas de JWT e idempotencia
+        run: bash scripts/ci-integration.sh
+      - name: Logs depurados si falla
+        if: failure()
+        run: docker compose logs backend --no-color --tail=100 | sed -E 's/Bearer [A-Za-z0-9._-]+/Bearer <redacted>/g'
+      - name: Limpieza
+        if: always()
+        run: docker compose down -v

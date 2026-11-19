@@ -1,0 +1,5 @@
+ total | distinct_client 
+-------+-----------------
+     1 |               1
+(1 row)
+

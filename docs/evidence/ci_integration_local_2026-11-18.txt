@@ -1,0 +1,7 @@
+PASS sin JWT devuelve 401
+PASS JWT invalido devuelve 401
+PASS JWT productor valido permite sync
+PASS retry con mismo clientOfferId
+PASS misma fila en ambas respuestas
+PASS una sola fila en PostgreSQL
+PASS GET /offers responde 200

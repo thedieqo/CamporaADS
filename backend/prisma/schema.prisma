@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PRODUCER
+  BUYER
+  ADMIN_AUDITOR
+  SUPPLIER
+}
+
+enum OfferStatus {
+  PUBLISHED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  municipality String?
+  createdAt    DateTime @default(now())
+  offers       Offer[]  @relation("ProducerOffers")
+}
+
+model Offer {
+  id            String      @id @default(uuid())
+  producerId    String
+  producer      User        @relation("ProducerOffers", fields: [producerId], references: [id])
+  clientOfferId String
+  productName   String
+  category      String?
+  quantity      Float
+  unit          String
+  pricePerUnit  Float
+  currency      String      @default("COP")
+  municipality  String
+  description   String?
+  status        OfferStatus @default(PUBLISHED)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([producerId, clientOfferId], name: "producer_client_offer_unique")
+  @@index([productName, municipality, status])
+}
